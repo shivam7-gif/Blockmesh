@@ -36,21 +36,21 @@ type TCPTransport struct {
 
 func NewTCPTransport(listenAddr string) *TCPTransport {
 	return &TCPTransport{
-		HandshakeFunc: NOPHandshakeFunc,
+		shakeHands: NOPHandshakeFunc,
 		listenAddress: listenAddr,
 		peers:         make(map[net.Addr]*TCPPeer),
 	}
 }
 
 func (t *TCPTransport) ListenAndAccept() error {
-	ln, err := net.Listen("tcp", t.listenAddress)
-	if err != nil {
+
+	var err error
+
+	t.listener ,err = net.Listen("tcp",t.listenAddress)
+
+	if err != nil{
 		return err
 	}
-
-	t.listener = ln
-	fmt.Printf("TCP server listening on %s\n", ln.Addr())
-
 	go t.startAcceptLoop()
 	return nil
 }
@@ -67,24 +67,27 @@ func (t *TCPTransport) startAcceptLoop() {
 	}
 }
 
+
+type Temp struct{}
+ 
+
 func (t *TCPTransport) handleConn(conn net.Conn) {
-	peer := NewTCPPeer(conn, false)
+	peer := NewTCPPeer(peer, true)
 
+	if err := t.shakeHands(peer); err != nil{
+		conn.Close()
 
-	if err := t.shakeHands(conn); err != nil{
-		conn.
+		return ErrInvalidHandshake
 	}
-	buf := new(bytes.Buffer)
-
 	// Read loop
+	msg := &Temp{}
 	for{
-		n , _  := conn.Read(buf)
-		// msg := buff[:n]
+		if err := t.shakeHands.Decode(conn , msg) ; err != nil{
 
+				fmt.Printf("tcp error : %s\n",err)
+				continue 
+			
+		}
 	}
-	t.mu.Lock()
-	t.peers[conn.RemoteAddr()] = peer
-	t.mu.Unlock()
 
-	fmt.Printf("New incoming connection from: %s\n", conn.RemoteAddr())
 }
